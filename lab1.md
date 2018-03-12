@@ -16,7 +16,7 @@ First, open your terminal app and login to tucson by running:
 ```bash
 ssh -Y USERNAME@tucson.stanford.edu
 ```
-![terminal](./img/ssh.png | width=100)
+<img src="./img/ssh.png" width="810">
 
 Tucson is the main server that we will be using to host our development environment. On tucson, the development directory is under spatial-lang. Go to your development directory by running: 
 ```bash
@@ -177,7 +177,8 @@ ls
 
 The "--synth" flag means that we want to generate a synthesizable design. The "--instrumentation" flag means that we want to learn about the number of clock cycles needed to run the design. The "--retime" flag means that Spatial would add retiming registers in your design. This flag is not particularly useful in this example; however when you come up with a design that contains large combinational circuit, inserting the retiming register would help you meet timing and reduce time needed for synthesizing. We will cover more about the flags in Lab 2. After generation finishes, your terminal will display some messages that look like: 
 
-![gen](./img/gen.png)
+
+<img src="./img/gen.png" width="70%" height="60%">
 
 The synthesizable design of your Spatial app is stored under "Lab1Part1RegExample". Let's take a look at the generated files. 
 ```bash
@@ -185,7 +186,7 @@ cd Lab1Part1RegExample
 ls 
 ```
 
-![genls](./img/genls.png)
+<img src="./img/genls.png" width="70%" height="60%">
 The chisel folder contains the RTL code generated from your design. Here are the commands to run VCS simulation: 
 ```bash
 make vcs > vcs.log
@@ -216,8 +217,8 @@ make arria10 | tee make.log
 The "tee" command would log the output from the synthesizer to "make.log".
 After you start the synthesizer, you can detach the screen session by pressing "Ctrl+A D". You can view the running screen sessions by using the command "screen -ls". To reattach a screen session, you can run "screen -r SESSIONNAME". 
 
-![screenjobs](./img/screenjobs.png)
 
+<img src="./img/screenjobs.png" width="70%" height="60%">
 The synthesis process would take ~20 min to run. After the synthesis finishes, we would want to deploy the design onto the FPGA board. You will need to resume the session, copy the synthesized bitstream onto board, and then ssh onto the board:
 ```bash
 screen -r Lab1Part1RegExample
@@ -226,7 +227,7 @@ screen -r Lab1Part1RegExample
 scp Lab1Part1RegExample.tar.gz root@arria10.stanford.edu:~/
 ssh root@arria10.stanford.edu
 ```
-![scp](./img/scp.png)
+<img src="./img/scp.png" width="70%" height="60%">
 
 Lab1Part1RegExample.tar.gz is a compressed file. Once you login, you will need to first decompress it. After the decompression finishes, you can run the design by using the "Top" executable:
 ```bash
@@ -236,7 +237,7 @@ cd Lab1Part1RegExample
 ```
 
 If your design runs successfully, you will see the following message:
-![deploydesign](./img/deploydesign.png)
+<img src="./img/deploydesign.png" width="70%" height="60%">
 
 It states that your design ran for 1 cycle. Congratulations! You have successfully deployed your first accelerator design! 
 
