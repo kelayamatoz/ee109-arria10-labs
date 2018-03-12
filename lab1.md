@@ -16,7 +16,7 @@ First, open your terminal app and login to tucson by running:
 ```bash
 ssh -Y USERNAME@tucson.stanford.edu
 ```
-![terminal](./img/ssh.png)
+![terminal](./img/ssh.png | width=100)
 
 Tucson is the main server that we will be using to host our development environment. On tucson, the development directory is under spatial-lang. Go to your development directory by running: 
 ```bash
