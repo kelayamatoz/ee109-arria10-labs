@@ -513,6 +513,8 @@ object Lab1Part6ReduceExample extends SpatialApp {
 }
 ```
 
+Although Reduce and Fold operate in similar manners, Fold allows user to specify a initial value to perform the reduction, whereas Reduce starts from the first element of the list.
+
 Compared to Foreach, Reduce and Fold allow users to write more precise code. Moreover, it provides the compiler with more information so that the compiler can perform more aggressive optimizations.
 
 ### Your Turn
