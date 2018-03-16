@@ -153,15 +153,3 @@ scp f username@arria10.stanford.edu:/foo/
 scp -r f username@arria10.stanford.edu:/foo/
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
