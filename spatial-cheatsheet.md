@@ -8,7 +8,7 @@ cd ~/spatial-lang/apps/src
 bin/spatial foo --sim
 # Run Scala sim
 cd ~/spatial-lang/
-./foo.sim
+./foo.sim "arg0 arg1 ..."
 # Synthesize an app foo with VCS backend, with instrumentation and retiming turned on
 bin/spatial foo --synth --instrumentation --retime
 # View the generated design
