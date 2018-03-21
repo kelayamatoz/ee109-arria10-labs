@@ -1,4 +1,4 @@
-### Laboratory Exercise 2: Advanced Usage of Spatial
+# Laboratory Exercise 2: Advanced Usage of Spatial
 In the last lab, we went through the basics of Spatial. In this lab, we are going to explore more advanced features of Spatial.
 
 We will first go through the usage of more advanced controllers. Then we will use the controllers to build an app that performs matrix multiplication. After we the app, we will learn about how to improve the performance of your app by making it parallel. We will also learn about how to use the tools Spatial provides to optimize the application.
@@ -7,7 +7,7 @@ More specifically, we will be covering the usage of the following elements:
 
 Controllers: MemReduce, MemFold, FSM
 
-On-Chip Memories: RegFile, LUT, ShiftRegister, LineBuffer
+On-Chip Memories: LUT
 
 ## MemReduce, MemFold
 MemReduce is very similar to Reduce, but different in the sense that Reduce operates on a register while MemReduce operates on a piece of on-chip memory (SRAM). If we take a step back and try to understand the two controllers from an abstract level, we will see that Reduce is a controller for scalars and MemReduce is for tensors. Here is the syntax for using MemReduce:
@@ -186,7 +186,10 @@ using:
 val lut_ijmn = lut(i,j,m,n)
 ```
 
-// TODO: add a LUT test
+## Your Turn
+* Please use the LUT syntax to implement the app in Lab2Part4LUT. What we want
+to do here is that given a LUT, the user will provide a base value, index i and
+index j. The output should be base + LUT(i,j).
 
 ### A More Involved Application: GEMM
 A large part of this section is borrowed from the official [Spatial tutorial](http://spatial-lang.readthedocs.io/en/latest/tutorial/gemm.html). 
@@ -256,7 +259,6 @@ and accumulate a new result on top of that, then write this new tile back.
 
 
 ## Using MemReduce and MemFold for Outer Products
-
 The animation below shows how to compute GEMM without tiling, using outer products.
 
 ![imageGemm](./img/gemmfull.gif)
@@ -265,15 +267,12 @@ Because we cannot create hardware to handle variable-sized matrices, we must til
 The animation below shows one valid scheme for doing so.  We will set our tile sizes in the
 M, N, and K dimensions above the Accel as follows
 ```scala
-  val tileM = 16
-  val tileN = 16
-  val tileK = 16
+val tileM = 16
+val tileN = 16
+val tileK = 16
 ```
 
 ![imageGemmTile](./img/gemmtile.gif)
-
-Note that this is not necessarily the most efficient implementation of this algorithm.  It is 
-simply meant to be an implementation that demonstrates features of Spatial. 
 
 Now let's write the code to implement this computation.  The large arrows and boxes represent
 matrix multiplies on the highlighted tiles using outer products.  There will be six nested loops:
@@ -316,55 +315,18 @@ this in the `Advanced Buffering`
 
 Next, we will implement the full outer product of the tiles that we have brought into the chip.
 ## Your Turn
-* tileB_sram nad tileC_sram contains two vectors. We need to calculate the dot
-product between the two and store the result 
-```scala
+* In every iteration of the innermost Foreach, we bring in two SRAMs of data.
+From the animation, you should have seen how we use the two SRAMs to populate a
+third one, and then write it back to Matrix C. In the comment session, please
+implement this design. As a little hint, you should first think of the proper
+controller to use. We would be first populate an SRAM, and then coalesce it
+numel_k times. You can fill your implementation in Lab2Part5GEMM.
 
-Accel {
-  Foreach(K by tileK){kk => 
-    val numel_k = min(tileK.to[Int], K - kk)
-    Foreach(M by tileM){mm =>
-      val numel_m = min(tileM.to[Int], M - mm)
-      val tileA_sram = SRAM[T](tileM, tileK)
-      tileA_sram load a(mm::mm+numel_m, kk::kk+numel_k)
-      Foreach(N by tileN){nn =>
-        val numel_n = min(tileN.to[Int], N - nn)
-        val tileB_sram = SRAM[T](tileK, tileN)
-        val tileC_sram = SRAM.buffer[T](tileM, tileN)
-        tileB_sram load b(kk::kk+numel_k, nn::nn+numel_n)
-        tileC_sram load c(mm::mm+numel_m, nn::nn+numel_n)
-  
-        MemFold(tileC_sram)(numel_k by 1){k => 
-          val tileK_local = SRAM[T](tileM, tileN)
-          Foreach(numel_m by 1, numel_n by 1){(i,j) => 
-            tileK_local(i,j) = tileA_sram(i,k) * tileB_sram(k,j)
-          }
-          
-          tileK_local
-        }{_+_}
-        
-        c(mm::mm+numel_m, nn::nn+numel_n) store tileC_sram
-      }
-    }
-  }
-}
-```
-
-Notice that the code added in the above snippet uses a ``MemFold`` and creates a new memory called
-``tileK_local`` inside of it.  The ``MemFold`` is similar to the ``Fold`` used in the previous :doc:`dotproduct`
-example, except it operates on SRAMs and RegFiles rather than Regs.  The SRAM returned in the body of the map function
-of the ``MemFold`` must match the dimensions of the accumulating SRAM given to the controller.  
-
-There is also a ``MemReduce`` node, which is analogous to the ``Reduce`` node for Regs, but this particular node
-will not work in this design because we need to accumulate a new partial sum on top of the partial sum that was
-previously stored for a particular tile in DRAM.  The ``MemReduce`` controller will directly write the result of the
-map function on the first iteration of the controller (i.e.- when k == 0), and then respect the lambda function (i.e.- addition)
-for every iteration after that. 
 
 ## Advanced Buffering
 
 This Accel above already implements coarse-grain pipelining at various levels.  For example, the controller whose counter is ``nn`` has 
-three stages in it.  The first stage loads ``tileB_sram`` and tileC_sram`` in parallel, the second stage performs the ``MemFold`` 
+three stages in it.  The first stage loads ``tileB_sram`` and ``tileC_sram`` in parallel, the second stage performs the ``MemFold`` 
 into ``tileC_sram``, and the third stage writes the resulting ``tileC_sram`` back into the appropriate region of DRAM.  This is an
 example where the compiler will create a triple-buffer for ``tileC_sram`` in order to ensure that the correct values are being worked with
 when this coarse-grain pipeline fills up and executes.  
@@ -388,8 +350,8 @@ you must combine loops appropriately.
 
 Let's now add in more optimizations to improve the performance of this application.  Specifically, we will parallelize two of the
 loops in such a way to expose hierarchical banking.  The following code shows the loops for ``k`` and ``j`` parallelized by 2 and 4
-respectively.::
-
+respectively:
+```scala
   Accel {
     Foreach(K by tileK){kk => 
       val numel_k = min(tileK.to[Int], K - kk)
@@ -417,6 +379,7 @@ respectively.::
       }
     }
   }
+```
 
 Now let's look at what happens to ``tileB_sram``.  It's first and second indices are both parallelized.
 Index ``j`` is vectorized by 4, while index ``k`` is duplicated for two different values of k when the 
@@ -470,85 +433,6 @@ If the parallelizations of the various accesses are not multiples of each other,
 minimalistic banking scheme that guarantees correctness.
 
 
-## Final Code
-
-Below is the complete GEMM app.  See the :doc:`HelloWorld <helloworld>` page for a refresher on how to compile and test an app:
-```scala
-    import spatial.dsl._
-    import virtualized._
-
-    object GEMM extends SpatialApp {
-
-      @virtualize
-      def main() {
-
-    type T = FixPt[TRUE,_24,_8]
-    val tileM = 16
-    val tileN = 16
-    val tileK = 16
-
-      val M = ArgIn[Int]
-      val N = ArgIn[Int]
-      val K = ArgIn[Int]
-      setArg(M,args(0).to[Int])
-      setArg(N,args(1).to[Int])
-      setArg(K,args(2).to[Int])
-
-      val a_data = (0::args(0).to[Int], 0::args(2).to[Int]){(i,j) => random[T](3)}
-      val b_data = (0::args(2).to[Int], 0::args(1).to[Int]){(i,j) => random[T](3)}
-      val c_init = (0::args(0).to[Int], 0::args(1).to[Int]){(i,j) => 0.to[T]}
-      val a = DRAM[T](M, K)
-      val b = DRAM[T](K, N)
-      val c = DRAM[T](M, N)
-
-      setMem(a, a_data)
-      setMem(b, b_data)
-      setMem(c, c_init)
-
-    Accel {
-      Foreach(K by tileK){kk => 
-        val numel_k = min(tileK.to[Int], K - kk)
-        Foreach(M by tileM){mm =>
-          val numel_m = min(tileM.to[Int], M - mm)
-          val tileA_sram = SRAM[T](tileM, tileK)
-          tileA_sram load a(mm::mm+numel_m, kk::kk+numel_k)
-          Foreach(N by tileN){nn =>
-            val numel_n = min(tileN.to[Int], N - nn)
-            val tileB_sram = SRAM[T](tileK, tileN)
-            val tileC_sram = SRAM.buffer[T](tileM, tileN)
-            tileB_sram load b(kk::kk+numel_k, nn::nn+numel_n par 8)
-            tileC_sram load c(mm::mm+numel_m, nn::nn+numel_n)
-
-            MemFold(tileC_sram)(numel_k by 1 par 2){k => 
-              val tileK_local = SRAM[T](tileM, tileN)
-              Foreach(numel_m by 1, numel_n by 1){(i,j) => 
-                tileK_local(i,j) = tileA_sram(i,k) * tileB_sram(k,j)
-              }
-              tileK_local
-            }{_+_}
-
-            c(mm::mm+numel_m, nn::nn+numel_n) store tileC_sram
-          }
-        }
-      }
-    }
-
-    val accel_matrix = getMatrix(c)
-
-    val gold_matrix = (0::args(0).to[Int], 0::args(1).to[Int]){(i,j) => 
-      Array.tabulate(args(2).to[Int]){k => a_data(i,k) * b_data(k,j)}.reduce{_+_}
-    }
-
-    printMatrix(accel_matrix, "Received: ")
-    printMatrix(gold_matrix, "Wanted: ")
-    val cksum = accel_matrix.zip(gold_matrix){_==_}.reduce{_&&_}
-    println("Pass? " + cksum)
-    
-      }
-    }
-```
-
-
 ## Instrumentation Hooks
 
 Now that you have finished writing an algorithm, you will want to try to get the best performance possible.  In order to
@@ -562,33 +446,32 @@ controller is done.  Note that performance counters will only be injected in the
 
 Once you compile your app, you should run it normally with the run.sh script.  You may notice that there are some extra lines
 that are spitting out information about the app.  Running the run.sh script created a file in your current directory called
-`instrumentation.txt`, which will be used to populate a visualization of your app.  Let's start by opening up the controller tree::
+`instrumentation.txt`, which will be used to populate a visualization of your app.  Let's start by opening up the controller tree:
 
-  google-chrome controller_tree.html # Or whatever your favorite browser is (firefox, etc.)
+```bash
+google-chrome controller_tree.html # Or whatever your favorite browser is (firefox, etc.)
+```
 
-You will get a screen that looks like this.
-
-.. raw:: html
-  :file: controller_tree.html
-
+You will get a screen that looks like this:
+![ctrl](./img/controller.png)
 
 If you play around with this screen, you will see that this shows you the control hierarchy in your app, and points each box
 back to the original source code.  To make this a more useful tool, we will now inject the instrumentation results into this
-page.  Run the script::
-
-  bash scripts/instrument.sh
+page.  Run the script:
+```bash
+bash scripts/instrument.sh
+```
 
 Now refresh the controller tree page.  There should be a lot of red text, similar to the image shown below:
-
-
-.. raw:: html
-  :file: instrumented_tree.html
+![ictrl](./img/icontroller.png)
 
 
 You can now play around with this page and look at how the various stages in your pipelines are performing.  We leave it up
 to the user to figure out how to use parallelizations and rewrite portions of the app to figure out how to balance the pipelines
 and get better performance.
 
-When you understand the concepts introduced in this page, you may move on to the next example, :doc:`convolution`, where you
-will learn to perform reductions on memories, include instrumentation hooks to help balance your pipeline,
-and see more complicated examples of banking.
+## Your Turn:
+With the information from instrumentation results, can you set the parallelization differently until you get the fewest clock cyle for your GEMM without running out of resources?  
+
+In the next lab, we will cover how to use RegFile, LUTs, ShiftRegister to
+perform convolution.
