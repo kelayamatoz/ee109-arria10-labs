@@ -10,5 +10,5 @@ differently.
 
 ### Does Not Find the Generated Bitstream
 This is usually due to the fact that your design is so large it cannot fit on
-board. You can find a few report files under the verilog-arria/output_files folder of your
-generated design directory.
+board. You can find a few reports under the verilog-arria/output_files folder of your
+generated design directory, which can tell you if your design is too large. 
