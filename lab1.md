@@ -513,8 +513,16 @@ object Lab1Part6ReduceExample extends SpatialApp {
 }
 ```
 
-Although Reduce and Fold operate in similar manners, Fold allows user to specify a initial value to perform the reduction, whereas Reduce starts from the first element of the list.
-
+Although Reduce and Fold operate in similar manners, Fold requires user to specify
+a initial value to perform the reduction, whereas Reduce starts from the first
+element of the list. For example, when using Fold, you have to manually
+initialize your fold register: 
+```scala
+val a = Reg[T](0)
+Fold(a)(N by n){ i =>
+  // Fold body
+}{ // binary operator }
+```
 Compared to Foreach, Reduce and Fold allow users to write more precise code. Moreover, it provides the compiler with more information so that the compiler can perform more aggressive optimizations.
 
 ### Your Turn

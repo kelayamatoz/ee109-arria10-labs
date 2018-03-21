@@ -1,7 +1,7 @@
 # Laboratory Exercise 2: Advanced Usage of Spatial
 In the last lab, we went through the basics of Spatial. In this lab, we are going to explore more advanced features of Spatial.
 
-We will first go through the usage of more advanced controllers. Then we will use the controllers to build an app that performs matrix multiplication. After we the app, we will learn about how to improve the performance of your app by making it parallel. We will also learn about how to use the tools Spatial provides to optimize the application.
+We will first go through the usage of more advanced controllers. Then we will use the controllers to build an app that performs matrix multiplication. After we finish the app, we will learn about how to improve the performance of your app by making it parallel. We will also learn about how to use the tools Spatial provides to optimize the application.
 
 More specifically, we will be covering the usage of the following elements: 
 
@@ -9,8 +9,10 @@ Controllers: MemReduce, MemFold, FSM
 
 On-Chip Memories: LUT
 
+Features for Optimizing Applications: Instrumentation, Choosing Parallelization
+
 ## MemReduce, MemFold
-MemReduce is very similar to Reduce, but different in the sense that Reduce operates on a register while MemReduce operates on a piece of on-chip memory (SRAM). If we take a step back and try to understand the two controllers from an abstract level, we will see that Reduce is a controller for scalars and MemReduce is for tensors. Here is the syntax for using MemReduce:
+MemReduce is very similar to Reduce, but different in the sense that Reduce operates on a register while MemReduce operates on a piece of on-chip memory (SRAM). If we take a step back and try to understand the two controllers from an abstract level, we will see that Reduce is designed for scalars and MemReduce is designed for tensors. Here is the syntax for using MemReduce:
 
 ```scala
 // Create a MemReduce Controller
@@ -22,9 +24,9 @@ MemReduce(accum_sram)(N by n){ i =>
 For example, you can add a list of arrays using MemReduce: 
 ```scala
 // Create an SRAM to store the reduced results
-val reducedSRAM = SRAM[Int](16)
+val a = SRAM[Int](16)
 // Add 10 SRAMs together, where each SRAM contains only ones.
-MemReduce(reducedSRAM)(-5 until 5 by 1) { i =>
+MemReduce(a)(-5 until 5 by 1) { i =>
   // Create an SRAM
   val tmp = SRAM[Int](16)
   // For each element in the tmp SRAM, fill it with 1
@@ -37,40 +39,31 @@ MemReduce(reducedSRAM)(-5 until 5 by 1) { i =>
 
 We can compile a Spatial App that further demonstrate this example: 
 ```scala
+// MemReduce
 object Lab2Part1SimpleMemReduce extends SpatialApp { 
 
   val N = 16.to[Int]
 
   @virtualize
   def main() {
-
     val out = DRAM[Int](16)
-    val out2 = DRAM[Int](16)
-
     Accel {
       val a = SRAM[Int](16)
-      MemReduce(a)(-5 until 0 by 1){i =>
+      MemReduce(a)(-5 until 5 by 1){i =>
         val tmp = SRAM[Int](16)
         Foreach(16 by 1) { j => tmp(j) = 1}
         tmp
       }{_+_}
-      val b = SRAM[Int](16)
-      Foreach(15 until -1 by -1){ i => b(i) = 2 }
       out store a
-      out2 store b
     }
-    val result = getMem(out)
-    val result2 = getMem(out2)
 
-    val gold = Array.tabulate(16){i => 5.to[Int]}
-    val gold2 = Array.tabulate(16){i => 2.to[Int]}
+    val result = getMem(out)
+    val gold = Array.tabulate(16){i => 10.to[Int]}
     printArray(gold, "expected: ")
     printArray(result, "result:   ")
-    printArray(gold2, "expected: ")
-    printArray(result2, "result:   ")
 
-    val cksum = gold.zip(result){_==_}.reduce{_&&_} && gold2.zip(result2){_==_}.reduce{_&&_}
-    println("PASS: " + cksum + " (SimpleMemReduce)")
+    val cksum = gold.zip(result){_==_}.reduce{_&&_}
+    println("PASS: " + cksum + " (Lab2Part1SimpleMemReduce)")
   }
 }
 ```
@@ -79,8 +72,12 @@ object Lab2Part1SimpleMemReduce extends SpatialApp {
 * Synthesize the example application. Report on the resource utilization and
 cycle counts.
 * We also have a MemFold controller, which operates the same way as fold but
-work with memories. Can you reimplement Lab2Part1SimpleMemReduce using MemFold?
-You can put your implementation under Lab2Part2SimpleMemFold.
+work with memories. In this part of the exercise, we would like to reimplement
+Lab2Part1SimpleMemReduce using MemFold. You can put your implementation under Lab2Part2SimpleMemFold.
+
+Make sure that you intialize your SRAM before passing it to the MemFold
+controller. Like Fold, MemFold assumes that you have intialized your MemFold
+SRAM. 
 
 ## FSM
 Spatial also supports Finite State Machine by providing an FSM controller. It
@@ -100,8 +97,9 @@ Example: Fill an SRAM of size 32 using the following rules:
 * If state is smaller than 16:
   * If index < 8, set the element at 31 - index to be index
   * Otherwise, set the element at 31 - index to be index + 1
+
 As you have observed, there are quite a few transitions of states as we iterate
-through the SRAM. This is a good setting where an FSM controller should be used.
+through the SRAM. An FSM controller would handle the transitions nicely.
 Here is how it is implemented in Spatial: 
 ```scala
 reg := 16
@@ -319,8 +317,8 @@ Next, we will implement the full outer product of the tiles that we have brought
 From the animation, you should have seen how we use the two SRAMs to populate a
 third one, and then write it back to Matrix C. In the comment session, please
 implement this design. As a little hint, you should first think of the proper
-controller to use. We would be first populate an SRAM, and then coalesce it
-numel_k times. You can fill your implementation in Lab2Part5GEMM.
+controller to use. We would first populate an SRAM using tileB_sram and
+tileC_sram. Then we would coalesce the result numel_k times. You can add your implementation to Lab2Part5GEMM.
 
 
 ## Advanced Buffering
@@ -471,7 +469,7 @@ to the user to figure out how to use parallelizations and rewrite portions of th
 and get better performance.
 
 ## Your Turn:
-With the information from instrumentation results, can you set the parallelization differently until you get the fewest clock cyle for your GEMM without running out of resources?  
+With the information from instrumentation results, can you set the parallelization differently to  get the fewest clock cyle for your GEMM? What's the best number you can get?
 
-In the next lab, we will cover how to use RegFile, LUTs, ShiftRegister to
-perform convolution.
+In the next lab, we will cover how to use RegFile, LUTs, ShiftRegisters, and
+Streaming interfaces.
