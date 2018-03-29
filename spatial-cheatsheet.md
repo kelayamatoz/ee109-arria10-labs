@@ -152,4 +152,3 @@ scp f username@arria10.stanford.edu:/foo/
 # scp a directory to /foo directory on the board.
 scp -r f username@arria10.stanford.edu:/foo/
 ```
-
