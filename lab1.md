@@ -175,7 +175,7 @@ cd ./gen
 ls
 ```
 
-The "--synth" flag means that we want to generate a synthesizable design. The "--instrumentation" flag means that we want to learn about the number of clock cycles needed to run the design. The "--retime" flag means that Spatial would add retiming registers in your design. This flag is not particularly useful in this example; however when you come up with a design that contains large combinational circuit, inserting the retiming register would help you meet timing and reduce time needed for synthesizing. We will cover more about the flags in Lab 2. After generation finishes, your terminal will display some messages that look like: 
+The "--synth" flag means that we want to generate a synthesizable design. The "--instrumentation" flag means that we want to learn about the number of clock cycles needed to finish the design. The "--retime" flag means that Spatial would add retiming registers in your design. This flag is not particularly useful in this example; however when you come up with a design that contains large combinational circuit, inserting the retiming register would help you meet timing and reduce time needed for synthesizing. We will cover more about the flags in Lab 2. After generation finishes, your terminal will display some messages that look like: 
 
 
 <img src="./img/gen.png" width="70%" height="60%">
@@ -188,6 +188,7 @@ ls
 
 <img src="./img/genls.png" width="70%" height="60%">
 The chisel folder contains the RTL code generated from your design. Here are the commands to run VCS simulation: 
+
 ```bash
 make vcs > vcs.log
 bash run.sh 3 5 > dramsim.log
@@ -220,6 +221,7 @@ After you start the synthesizer, you can detach the screen session by pressing "
 
 <img src="./img/screenjobs.png" width="70%" height="60%">
 The synthesis process would take ~20 min to run. After the synthesis finishes, we would want to deploy the design onto the FPGA board. You will need to resume the session, copy the synthesized bitstream onto board, and then ssh onto the board:
+
 ```bash
 screen -r Lab1Part1RegExample
 // In the screen session. scp copies a file to a remote board. 
@@ -269,7 +271,7 @@ dram(k::k+n0) store sram // store the elements from index k to k+n0 into dram
 
 DRAM and SRAM are quite different. First, you can only access DRAM data through bursts, whereas you can access SRAM data element by element. Second, SRAM reads / writes can be much faster than DRAM reads / writes. On Arria10, a single SRAM access usually completes in one cycle. 
 
-However, modern FPGA usually don't have a lot of SRAM resources. For example, Arria10 SoC has 1GB of DRAM and only 42.6 Mbits of SRAM. Therefore, when designing your accelerator, you need to think of the design trade-off between using SRAM and DRAM. We will cover this topic in Lab 2.
+However, modern FPGAs usually don't have a lot of SRAM resources. For example, Arria10 SoC has 1GB of DRAM and only 42.6 Mbits of SRAM. Therefore, when designing your accelerator, you need to think of the design trade-off between using SRAM and DRAM. We will cover this topic in Lab 2.
 
 A Foreach Controller can be thought of as a for loop. It has the following syntax: 
 ```scala
